@@ -9,19 +9,6 @@ public enum TileType
     road = 1, 
 }
 
-//using a struct to store the grid information
-public struct GridTile
-{
-    public TileType theType;
-    public double reward, quality;
-
-    public GridTile(TileType newType, double newReward, double newQuality)
-    {
-        theType = newType;
-        reward = newReward;
-        quality = newQuality;
-    }
-}
 
 //Atiya Nova 2020/03/12
 //Class that manages the construction and logic of the grid
@@ -46,21 +33,24 @@ public class GridManager : MonoBehaviour
         {
             for (int j = 0; j < colSize; j++)
             {
-                //TODO: set the values of the tiles properly
-                //this is just placeholder
-                if (i % 2 == 0 && j % 2 == 0) //this is where I'm placing the buildings--they're not traversable
-                {
-                    theMaze[i, j] = new GridTile(TileType.building, 0, 0);
-                }
-                else //the roads are traversable thus they have a reward and quality
-                {
-                    theMaze[i, j] = new GridTile(TileType.road, -0.1, 12);
-                }
-
                 //This creates an aesthetic representation of the grid tile
                 GameObject newTile = GameObject.Instantiate(tilePrefab);
                 newTile.transform.position = new Vector3(i * distVal, 0, j * distVal);
                 newTile.transform.parent = this.transform;
+                theMaze[i, j] = newTile.GetComponent<GridTile>();
+
+                //TODO: set the values of the tiles properly
+                //this is just placeholder
+                if (i % 2 == 0 && j % 2 == 0) //this is where I'm placing the buildings--they're not traversable
+                {
+                    theMaze[i, j].SetProperties(TileType.building, 0, 0);
+                }
+                else //the roads are traversable thus they have a reward and quality
+                {
+                    theMaze[i, j].SetProperties(TileType.road, -0.1, 12);
+                }
+
+       
                 SetAesthetic(newTile, theMaze[i, j].theType);
             }
         }
