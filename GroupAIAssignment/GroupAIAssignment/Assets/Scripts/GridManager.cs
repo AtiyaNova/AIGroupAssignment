@@ -81,7 +81,7 @@ public class GridManager : MonoBehaviour
 
         //Cities are in a gridlike format--the AI will either go horizontally, or vertically
         //TODO: Clean this up!
-        if ((x+1)<rowSize)
+        if ((x+1)<rowSize-1)
         {
             if (theMaze[x + 1, y].theType == TileType.road) result.Add(theMaze[x + 1, y]);
         }
@@ -91,7 +91,7 @@ public class GridManager : MonoBehaviour
             if (theMaze[x - 1, y].theType == TileType.road) result.Add(theMaze[x - 1, y]);
         }
 
-        if ((y + 1) < colSize)
+        if ((y + 1) < colSize-1)
         {
             if (theMaze[x, y+1].theType == TileType.road) result.Add(theMaze[x, y+1]);
         }
