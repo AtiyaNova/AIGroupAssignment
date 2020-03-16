@@ -66,9 +66,9 @@ public class GridManager : MonoBehaviour
                 theObject.GetComponent<MeshFilter>().mesh = roadMesh;
                 break;
             case TileType.building:
-                int chosenBuilding = Random.Range(0, buildingMeshes.Length); //randomly generates which building mesh is used
-                theObject.GetComponent<Renderer>().material = buildingMats[chosenBuilding];
-                theObject.GetComponent<MeshFilter>().mesh = buildingMeshes[chosenBuilding];
+                //some random joociness
+                theObject.GetComponent<Renderer>().material = buildingMats[Random.Range(0, buildingMats.Length)];
+                theObject.GetComponent<MeshFilter>().mesh = buildingMeshes[Random.Range(0, buildingMeshes.Length)];
                 break;
         }
     }
