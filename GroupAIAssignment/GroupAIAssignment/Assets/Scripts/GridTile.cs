@@ -9,11 +9,9 @@ public class GridTile : MonoBehaviour
     public double reward, quality;
     public int x, y;
 
-    public void SetProperties(TileType newType, double newReward, double newQuality, int newX, int newY)
+    public void SetProperties(TileType newType, int newX, int newY)
     {
         theType = newType;
-        reward = newReward;
-        quality = newQuality;
         x = newX;
         y = newY;
     }
