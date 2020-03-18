@@ -1,6 +1,13 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+/*
+ *Artificial Intelligence Group Assignment 
+ * Matthew Paraskevakos 100592704
+ * Angela Tabafunda 100622426
+ *Atiya Nova 100620165
+ * Code based on: https://docs.microsoft.com/en-us/archive/msdn-magazine/2018/august/test-run-introduction-to-q-learning-using-csharp
+ */
 
 //Using enums to set the type of tile
 public enum TileType
@@ -12,9 +19,9 @@ public enum TileType
 }
 public struct StateTransitions
 {
-    public int transition;
-    public double reward;
-    public double quality;
+    public int transition;//is this state traversable
+    public double reward;//the reward for traversing this state
+    public double quality;//the q value of this state
 
 }
 
@@ -23,15 +30,15 @@ public struct StateTransitions
 public class GridManager : MonoBehaviour
 {
     //the static variables
-    static int rowSize, colSize = 12;
-    static int stateSize = rowSize * colSize;
+    static int rowSize, colSize = 12;//length and width of our grid
+    static int stateSize = rowSize * colSize;//size of our grid and total number of states
     static float distVal = 1.7f;
-    public int maxEpochs = 1000;
-    public float learningRate = 0.5f;
-    public float gammaRate = 0.5f;
+    public int maxEpochs = 1000;//number of iterations
+    public float learningRate = 0.5f;//our learning rate changes the weight of our current and future results at the cost of the past results
+    public float gammaRate = 0.5f;//changes the weight of future results
     //public variables for the tiles
-    public static GridTile[,] theMaze = new GridTile[colSize, rowSize];
-    public static StateTransitions[,] mazeTransitions = new StateTransitions[stateSize,stateSize];
+    public static GridTile[,] theMaze = new GridTile[colSize, rowSize];//physical grid tile
+    public static StateTransitions[,] mazeTransitions = new StateTransitions[stateSize,stateSize];//transtions between all states
     public GameObject tilePrefab;
     public Material roadMat; 
     public Mesh roadMesh;
@@ -74,7 +81,7 @@ public class GridManager : MonoBehaviour
             }
         }
 
-        theMaze[colSize - 1, rowSize - 1].SetProperties(TileType.goal, colSize - 1, rowSize - 1);
+        theMaze[colSize - 1, rowSize - 1].SetProperties(TileType.goal, colSize - 1, rowSize - 1);//set our goal
 
         //setting the delivery logic
         int deliveryMax = 5;
@@ -95,17 +102,17 @@ public class GridManager : MonoBehaviour
 
             if (delCounter >= deliveryMax) break;
         }
-
+        //check all neighbooring tiles to see if the are traversable and what their reward is
         for (int i = 0; i < colSize; i++)
         {
             for (int j = 0; j < rowSize; j++)
             {
-                if (j + 1 < rowSize)
+                if (j + 1 < rowSize)//if not out of range
                 {
-                    if (theMaze[i, j + 1].theType != TileType.building)
+                    if (theMaze[i, j + 1].theType != TileType.building)//if not a building
                     {
-                        mazeTransitions[(j + (i * colSize)), ((j + 1) + (i * colSize))].transition = 1;
-                        mazeTransitions[(j + (i * colSize)), ((j + 1) + (i * colSize))].reward = GetReward(theMaze[i, j + 1].theType);
+                        mazeTransitions[(j + (i * colSize)), ((j + 1) + (i * colSize))].transition = 1;//set to 1 if traverable
+                        mazeTransitions[(j + (i * colSize)), ((j + 1) + (i * colSize))].reward = GetReward(theMaze[i, j + 1].theType);//return reward based on tile type
                     }
                 }
 
@@ -148,28 +155,29 @@ public class GridManager : MonoBehaviour
         doneComp = true;
     }
 
-    void Update()
+    void Update()//update
     {
-        if (doneComp)
+        if (doneComp)//if matrix has been computed
         {
             Walk();
+            Debug.Log((currentState % colSize) + " , "+ Mathf.Floor(currentState / rowSize));
         }
-        Debug.Log((currentState % colSize) + " , "+ Mathf.Floor(currentState / rowSize));
+       
 
     }
-    double GetReward(TileType type)
+    double GetReward(TileType type)//return reward based in tile type
     {
         switch (type)
         {
             default:
                 break;
-            case TileType.building:
+            case TileType.building://buildings cant be traversed so the return nothing
                 return 0;
-            case TileType.road:
+            case TileType.road://we want to take as few roads as possible so the return a negative reward
                 return -0.1;
-            case TileType.goal:
+            case TileType.goal://the goal is where we want to end up so it return a high reward
                 return 25.0;
-            case TileType.delivery:
+            case TileType.delivery://we want to visit as many delivery points as possible along the way so they return a reward as well
                 return 5.0;
         }
         return 0.0;
@@ -207,8 +215,8 @@ public class GridManager : MonoBehaviour
         }
     }
 
-    //TODO: Create a function that returns a list of possible moves
-    static List<int> GetNextState(int cState)
+  
+    static List<int> GetNextState(int cState) // returns a list of possible moves from the current state
     {
         List<int> result = new List<int>();
         for (int j = 0; j < mazeTransitions.Length; ++j)
@@ -221,9 +229,8 @@ public class GridManager : MonoBehaviour
         return result;
     }
 
-    //TODO: Create a function that sometimes gets a random move
-    //Because Q-Learning occaisonally takes advantage of random moves
-    static int GetRandomState(int cState)
+    
+    static int GetRandomState(int cState)//gets a random state from the list of possible states
     {
         List<int> nextStates = GetNextState(cState);
         int count = nextStates.Count;
@@ -233,44 +240,43 @@ public class GridManager : MonoBehaviour
 
     
 
-    //TODO: Create a function that trains the agent
-    static void Train(int goal, double gamma, double lrnRate, int epochs)
+   
+    static void Train(int goal, double gamma, double lrnRate, int epochs) // trains the agent
     {
         //epoch is a fancy word for iterations
         for (int i = 0; i < epochs; i++)
         {
             //we're supposed to set this to a random value
-            //I'm just setting it to 0, 0 for now?
             Random.InitState((int)Time.deltaTime);
-            int cState = Random.Range(0, theMaze.Length);
+            int cState = Random.Range(0, theMaze.Length);//current state
 
 
             while (true)
             {
                 //we find a random next state
                 int nextState = GetRandomState(cState);
-                List<int> possFutureStates = GetNextState(nextState);
-                double maxQ = double.MinValue;
-                for (int j = 0; j < possFutureStates.Count; ++j)
+                List<int> possFutureStates = GetNextState(nextState);//possible states
+                double maxQ = double.MinValue;//initialize as some super minimum number
+                for (int j = 0; j < possFutureStates.Count; ++j)//for each possible state
                 {
-                    int futureState = possFutureStates[j];
-                    double q = mazeTransitions[nextState, futureState].quality;
-                    if (q > maxQ)
+                    int futureState = possFutureStates[j];//get the future state from the next one
+                    double q = mazeTransitions[nextState, futureState].quality;//get the quality score
+                    if (q > maxQ)//if it is less that the max quality
                     {
                         maxQ = q;
                     }
 
                 }
-                mazeTransitions[cState,nextState].quality =((1 - lrnRate) * mazeTransitions[cState,nextState].quality)+(lrnRate * (mazeTransitions[cState,nextState].reward + (gamma * maxQ)));
+                mazeTransitions[cState,nextState].quality =((1 - lrnRate) * mazeTransitions[cState,nextState].quality)+(lrnRate * (mazeTransitions[cState,nextState].reward + (gamma * maxQ)));//our bellman equation
                 cState = nextState;
-                if (cState == goal) break;
+                if (cState == goal) break;//end if it reached the end
 
             }
             Debug.Log("Progress: "+ ((((float)i)/((float)epochs))*100.0f)+"%");
         }
     }
 
-     void Walk()
+     void Walk()//moves the agent accross the board
     {
         int nextState;
         if (currentState != goalState)
@@ -282,13 +288,12 @@ public class GridManager : MonoBehaviour
             }
             nextState = ArgMax(possStatesQuality);
             currentState = nextState;
-            /*currentState.x = nextState % colSize;
-            currentState.y =Mathf.Floor( nextState/rowSize);*/
+            
         }
         
     }
 
-     int ArgMax(double[] quality)
+     int ArgMax(double[] quality)//gets the best choice from the possible states
     {
         double maxValue = quality[0];
         int index = 0;
