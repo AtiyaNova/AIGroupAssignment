@@ -32,7 +32,7 @@ public class GridManager : MonoBehaviour
     static int rowSize=12, colSize = 12;//length and width of our grid
     static int stateSize = rowSize * colSize;//size of our grid and total number of states
     static float distVal = 1.7f;
-    public int maxEpochs = 2000;//number of iterations
+    public int maxEpochs = 999999999;//number of iterations
     public float learningRate = 0.5f;//our learning rate changes the weight of our current and future results at the cost of the past results
     public float gammaRate = 0.5f;//changes the weight of future results
     //public variables for the tiles
@@ -51,6 +51,7 @@ public class GridManager : MonoBehaviour
     int currentState = 0;
     int goalState = stateSize-1;
     public GameObject theCar;
+    float currentTime = 0;
 
     void Start()
     {
@@ -83,11 +84,14 @@ public class GridManager : MonoBehaviour
         }
 
         theMaze[11, 11].SetProperties(TileType.goal, 11, 11);//set our goal
+
         SetAesthetic(theMaze[11,11].gameObject, theMaze[11, 11].theType);
+        theMaze[0, 0].SetProperties(TileType.road, 0, 0);//sets our start
+        SetAesthetic(theMaze[0, 0].gameObject, theMaze[0, 0].theType);
 
 
         //setting the delivery logic
-        int deliveryMax = 5;
+        int deliveryMax = 1;
         int delCounter = 0;
 
         //setting the delivery points
@@ -163,13 +167,20 @@ public class GridManager : MonoBehaviour
     {
         if (doneComp)//if matrix has been computed
         {
-            Walk();
-            //print(currentState);
-            theCar.transform.position = theMaze[currentState % colSize, currentState / rowSize].transform.position;
+            float maxTime = 1;
+
+            currentTime += Time.deltaTime;
+
+            if (currentTime >= maxTime)
+            {
+                Walk();
+                //print(currentState);
+                theCar.transform.position = theMaze[currentState % colSize, currentState / rowSize].transform.position;
+                currentTime = 0;
+            }
             //Debug.Log((currentState % colSize) + " , "+ Mathf.Floor(currentState / rowSize));
         }
        
-
     }
 
     //return reward based on the tile type
@@ -183,14 +194,14 @@ public class GridManager : MonoBehaviour
                 return 0;
             case TileType.road://we want to take as few roads as possible 
                 //so the return is a negative reward
-                return -0.1;
+                return -0.001;
             case TileType.goal://the goal is where we want to end up 
                 //so it returns a high reward
-                return 25.0;
+                return 10000.0;
             case TileType.delivery:
                 //we want to visit as many delivery points as possible 
                 //along the way so they return a reward as well
-                return 5.0;
+                return 10;
         }
         return 0.0;
     }
@@ -261,9 +272,8 @@ public class GridManager : MonoBehaviour
         for (int i = 0; i < epochs; i++)
         {
             //we're supposed to set this to a random value
-            Random.InitState((int)Time.deltaTime);
+           // Random.InitState((int)Time.deltaTime);
             int cState = Random.Range(0, theMaze.Length);//current state
-
 
             while (true)
             {
@@ -283,9 +293,8 @@ public class GridManager : MonoBehaviour
                 }
 
                 mazeTransitions[cState,nextState].quality =
-                    ((1 - lrnRate) * mazeTransitions[cState,nextState].quality)
+                     ((1 - lrnRate) * mazeTransitions[cState,nextState].quality)
                     +(lrnRate * (mazeTransitions[cState,nextState].reward + (gamma * maxQ)));//our bellman equation
-
                 cState = nextState;
                 if (cState == goal) break;//end if it reached the end
 
@@ -302,14 +311,13 @@ public class GridManager : MonoBehaviour
             double[] possStatesQuality = new double[stateSize];
             for(int i = 0; i < possStatesQuality.Length; i++)
             {
-               // print(possStatesQuality[i] = mazeTransitions[currentState, i].transition);
                 possStatesQuality[i] = mazeTransitions[currentState, i].quality;
             }
             nextState = ArgMax(possStatesQuality);
             currentState = nextState;
-            
+
         }
-        
+
     }
 
      int ArgMax(double[] quality)//gets the best choice from the possible states
@@ -318,12 +326,14 @@ public class GridManager : MonoBehaviour
         int index = 0;
         for (int i = 0; i < quality.Length; ++i)
         {
+            if (quality[i] != 0) print("the quality " + quality[i]);
             if (quality[i] > maxValue)
             {
                 maxValue = quality[i];
                 index = i;
             }
         }
+        print("done" + index);
         return index;
     }
 
